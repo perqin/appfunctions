@@ -91,6 +91,7 @@ fun SettingsScreen(
 
     SettingsScreenContent(
         geminiApiKeyState = viewModel.geminiApiKeyState,
+        kimiApiKeyState = viewModel.kimiApiKeyState,
         serviceTier = uiState.serviceTier,
         onServiceTierSelected = viewModel::setServiceTier,
         onOpenLicenses = onOpenLicensesClick,
@@ -103,6 +104,7 @@ fun SettingsScreen(
 @Composable
 fun SettingsScreenContent(
     geminiApiKeyState: TextFieldState,
+    kimiApiKeyState: TextFieldState,
     serviceTier: ServiceTier,
     onServiceTierSelected: (ServiceTier) -> Unit,
     onOpenLicenses: () -> Unit,
@@ -189,6 +191,27 @@ fun SettingsScreenContent(
 
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Text(
+                    text = stringResource(id = R.string.settings_kimi_api_key),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                OutlinedTextField(
+                    value = kimiApiKeyState.text.toString(),
+                    onValueChange = { kimiApiKeyState.setTextAndPlaceCursorAtEnd(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    shape = CircleShape,
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceBright,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceBright,
+                        ),
+                )
+            }
+
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Text(
                     text = stringResource(id = R.string.settings_service_tier),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -268,6 +291,7 @@ fun SettingsScreenContent(
 fun SettingsScreenPreview() {
     SettingsScreenContent(
         geminiApiKeyState = rememberTextFieldState("AIzaSy..."),
+        kimiApiKeyState = rememberTextFieldState("sk-kimi..."),
         serviceTier = ServiceTier.STANDARD,
         onServiceTierSelected = {},
         onOpenLicenses = {},

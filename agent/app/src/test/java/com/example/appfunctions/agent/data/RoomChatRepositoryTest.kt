@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 
@@ -102,5 +103,24 @@ class RoomChatRepositoryTest {
             repository.updateThreadModel(threadId, model)
 
             coVerify { chatDao.updateThreadModel(threadId, model) }
+        }
+
+    @Test
+    fun updateLatestInteractionId_returnsFalseWhenModelChanged() =
+        runBlocking {
+            val threadId = "thread_1"
+            val interactionId = "kimi:state"
+            val expectedModel = LlmModel.KIMI_FOR_CODING
+            coEvery {
+                chatDao.updateLatestInteractionId(threadId, interactionId, expectedModel)
+            } returns 0
+
+            val updated =
+                repository.updateLatestInteractionId(threadId, interactionId, expectedModel)
+
+            assertFalse(updated)
+            coVerify {
+                chatDao.updateLatestInteractionId(threadId, interactionId, expectedModel)
+            }
         }
 }

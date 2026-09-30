@@ -146,6 +146,39 @@ class AgentDemoViewModelTest {
         }
 
     @Test
+    fun `onEvent OnModelSelected ignores selection while agent is active`() =
+        runTest {
+            val existingThread =
+                ThreadEntity(
+                    "thread-1",
+                    System.currentTimeMillis(),
+                    LlmModel.GEMINI_3_FLASH_PREVIEW,
+                    null,
+                )
+            threadsFlow.value = listOf(existingThread)
+            agentStatusFlow.value = AgentStatus.Thinking
+
+            viewModel =
+                AgentDemoViewModel(
+                    savedStateHandle,
+                    getChatHistoryUseCase,
+                    manageThreadsUseCase,
+                    sendMessageUseCase,
+                    agentOrchestrator,
+                    settingsRepository,
+                    observeActivePendingIntentsUseCase,
+                    launchPendingIntentUseCase,
+                    consumePendingIntentUseCase,
+                    getInstalledAppsUseCase,
+                    getAppFunctionsUseCase,
+                )
+
+            viewModel.onEvent(AgentUiEvent.OnModelSelected(LlmModel.KIMI_FOR_CODING))
+
+            coVerify(exactly = 0) { manageThreadsUseCase.updateThreadModel(any(), any()) }
+        }
+
+    @Test
     fun `init creates thread when none exists`() =
         runTest {
             threadsFlow.value = emptyList()

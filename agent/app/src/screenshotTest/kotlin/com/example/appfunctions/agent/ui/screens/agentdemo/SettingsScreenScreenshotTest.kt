@@ -28,6 +28,7 @@ import com.example.appfunctions.agent.data.ServiceTier
 fun SettingsScreenScreenshotPreview() {
     SettingsScreenContent(
         geminiApiKeyState = rememberTextFieldState("AIzaSy..."),
+        kimiApiKeyState = rememberTextFieldState("sk-kimi..."),
         serviceTier = ServiceTier.STANDARD,
         onServiceTierSelected = {
             // no-op

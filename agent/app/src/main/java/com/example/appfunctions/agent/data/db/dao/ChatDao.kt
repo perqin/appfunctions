@@ -42,13 +42,21 @@ interface ChatDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertThread(thread: ThreadEntity)
 
-    @Query("UPDATE threads SET latestInteractionId = :interactionId WHERE threadId = :threadId")
+    @Query(
+        "UPDATE threads SET latestInteractionId = :interactionId " +
+            "WHERE threadId = :threadId AND llmModel = :expectedModel",
+    )
     suspend fun updateLatestInteractionId(
         threadId: String,
         interactionId: String,
-    )
+        expectedModel: LlmModel,
+    ): Int
 
-    @Query("UPDATE threads SET llmModel = :llmModel WHERE threadId = :threadId")
+    @Query(
+        "UPDATE threads SET llmModel = :llmModel, " +
+            "latestInteractionId = CASE WHEN llmModel = :llmModel THEN latestInteractionId ELSE NULL END " +
+            "WHERE threadId = :threadId",
+    )
     suspend fun updateThreadModel(
         threadId: String,
         llmModel: LlmModel,

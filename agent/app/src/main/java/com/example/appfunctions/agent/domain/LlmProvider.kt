@@ -23,8 +23,9 @@ interface LlmProvider {
     /**
      * Generates a response from the LLM.
      *
-     * @param previousInteractionId The ID of the previous interaction to continue the conversation.
-     *   Pass null for the first turn.
+     * @param previousInteractionId The provider continuation token returned by the previous call.
+     *   Depending on the provider, this may be an API interaction ID or serialized conversation
+     *   state. Pass null for the first turn.
      * @param input The new input (user message or tool response).
      * @param tools The list of available tools (AppFunctions).
      * @param apiKey The API key for the LLM provider.

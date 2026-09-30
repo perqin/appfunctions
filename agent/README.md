@@ -8,6 +8,9 @@ deterministic input, and test functions using an LLM-based agent.
 
 -   **ADB**: Ensure you have `adb` installed and in your PATH.
 -   **Device/Emulator**: A connected Android device or emulator with developer options enabled.
+-   **LLM API key**: Configure a Gemini or Kimi API key from the app's Settings screen. Kimi
+    requests use the Kimi Code OpenAI-compatible API at
+    `https://api.kimi.com/coding/v1/chat/completions`.
 
 ## Building and Running
 

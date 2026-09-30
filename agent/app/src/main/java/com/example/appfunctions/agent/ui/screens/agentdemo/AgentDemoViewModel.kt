@@ -186,7 +186,10 @@ class AgentDemoViewModel
                     }
                 }
                 is AgentUiEvent.OnModelSelected -> {
-                    if (currentState is AgentUiState.Loaded) {
+                    if (
+                        currentState is AgentUiState.Loaded &&
+                        agentOrchestrator.status.value == AgentStatus.Idle
+                    ) {
                         viewModelScope.launch {
                             manageThreadsUseCase.updateThreadModel(
                                 currentState.currentThread.threadId,

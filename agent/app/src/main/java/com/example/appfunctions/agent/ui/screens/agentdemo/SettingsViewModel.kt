@@ -41,6 +41,7 @@ class SettingsViewModel
         private val settingsRepository: SettingsRepository,
     ) : ViewModel() {
         val geminiApiKeyState = TextFieldState()
+        val kimiApiKeyState = TextFieldState()
 
         val uiState: StateFlow<SettingsUiState> =
             combine(
@@ -61,6 +62,10 @@ class SettingsViewModel
                 if (!geminiKey.isNullOrEmpty()) {
                     geminiApiKeyState.setTextAndPlaceCursorAtEnd(geminiKey)
                 }
+                val kimiKey = settingsRepository.kimiApiKey.firstOrNull()
+                if (!kimiKey.isNullOrEmpty()) {
+                    kimiApiKeyState.setTextAndPlaceCursorAtEnd(kimiKey)
+                }
             }
         }
 
@@ -68,6 +73,7 @@ class SettingsViewModel
             viewModelScope.launch {
                 withContext(NonCancellable) {
                     settingsRepository.setGeminiApiKey(geminiApiKeyState.text.toString())
+                    settingsRepository.setKimiApiKey(kimiApiKeyState.text.toString())
                 }
             }
         }

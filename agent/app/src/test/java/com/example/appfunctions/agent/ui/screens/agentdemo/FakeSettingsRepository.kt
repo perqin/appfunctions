@@ -25,6 +25,9 @@ class FakeSettingsRepository : SettingsRepository {
     private val _geminiApiKey = MutableStateFlow<String?>(null)
     override val geminiApiKey: Flow<String?> = _geminiApiKey
 
+    private val _kimiApiKey = MutableStateFlow<String?>(null)
+    override val kimiApiKey: Flow<String?> = _kimiApiKey
+
     private val _selectedProvider = MutableStateFlow<LlmProviderName>(LlmProviderName.GEMINI)
     override val selectedProvider: Flow<LlmProviderName> = _selectedProvider
 
@@ -36,6 +39,10 @@ class FakeSettingsRepository : SettingsRepository {
 
     override suspend fun setGeminiApiKey(apiKey: String) {
         _geminiApiKey.value = apiKey
+    }
+
+    override suspend fun setKimiApiKey(apiKey: String) {
+        _kimiApiKey.value = apiKey
     }
 
     override suspend fun setSelectedProvider(provider: LlmProviderName) {

@@ -59,7 +59,8 @@ interface ChatRepository {
     suspend fun updateLatestInteractionId(
         threadId: String,
         interactionId: String,
-    )
+        expectedModel: LlmModel,
+    ): Boolean
 
     /** Returns a flow of the thread associated with a specific interaction ID. */
     fun getThreadByInteractionId(interactionId: String): Flow<ThreadEntity?>

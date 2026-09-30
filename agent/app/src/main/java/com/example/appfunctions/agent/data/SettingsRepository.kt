@@ -22,11 +22,17 @@ interface SettingsRepository {
     /** Flow of the Gemini API key. */
     val geminiApiKey: Flow<String?>
 
+    /** Flow of the Kimi API key. */
+    val kimiApiKey: Flow<String?>
+
     /** Flow of the selected LLM provider. */
     val selectedProvider: Flow<LlmProviderName>
 
     /** Sets the Gemini API key. */
     suspend fun setGeminiApiKey(apiKey: String)
+
+    /** Sets the Kimi API key. */
+    suspend fun setKimiApiKey(apiKey: String)
 
     /** Sets the selected LLM provider. */
     suspend fun setSelectedProvider(provider: LlmProviderName)

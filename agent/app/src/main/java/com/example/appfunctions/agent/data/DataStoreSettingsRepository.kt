@@ -35,6 +35,7 @@ class DataStoreSettingsRepository
         // TODO: Make sure the API keys are not leaked in the I/O event.
         private object PreferencesKeys {
             val GEMINI_API_KEY = stringPreferencesKey("gemini_api_key")
+            val KIMI_API_KEY = stringPreferencesKey("kimi_api_key")
             val SELECTED_PROVIDER = stringPreferencesKey("selected_provider")
             val SERVICE_TIER = stringPreferencesKey("service_tier")
             val PINNED_APPS = stringSetPreferencesKey("pinned_apps")
@@ -48,13 +49,13 @@ class DataStoreSettingsRepository
                 dataStore.data.map { preferences -> preferences[PreferencesKeys.GEMINI_API_KEY] }
             }
 
+        override val kimiApiKey: Flow<String?> =
+            dataStore.data.map { preferences -> preferences[PreferencesKeys.KIMI_API_KEY] }
+
         override val selectedProvider: Flow<LlmProviderName> =
             dataStore.data.map { preferences ->
                 preferences[PreferencesKeys.SELECTED_PROVIDER]?.let { storedValue ->
-                    when (storedValue.uppercase()) {
-                        "GEMINI" -> LlmProviderName.GEMINI
-                        else -> LlmProviderName.GEMINI
-                    }
+                    LlmProviderName.entries.find { it.name.equals(storedValue, ignoreCase = true) }
                 } ?: LlmProviderName.GEMINI
             }
 
@@ -75,6 +76,10 @@ class DataStoreSettingsRepository
 
         override suspend fun setGeminiApiKey(apiKey: String) {
             dataStore.edit { preferences -> preferences[PreferencesKeys.GEMINI_API_KEY] = apiKey }
+        }
+
+        override suspend fun setKimiApiKey(apiKey: String) {
+            dataStore.edit { preferences -> preferences[PreferencesKeys.KIMI_API_KEY] = apiKey }
         }
 
         override suspend fun setSelectedProvider(provider: LlmProviderName) {

@@ -57,7 +57,8 @@ class SettingsViewModelTest {
     fun uiState_reflectsRepositoryValues() =
         runTest {
             fakeRepository.setGeminiApiKey("gemini_key")
-            fakeRepository.setSelectedProvider(LlmProviderName.GEMINI)
+            fakeRepository.setKimiApiKey("kimi_key")
+            fakeRepository.setSelectedProvider(LlmProviderName.KIMI)
 
             // Recreate ViewModel to trigger init load
             viewModel = SettingsViewModel(fakeRepository)
@@ -66,9 +67,10 @@ class SettingsViewModelTest {
             testScheduler.advanceUntilIdle()
 
             assertEquals("gemini_key", viewModel.geminiApiKeyState.text.toString())
+            assertEquals("kimi_key", viewModel.kimiApiKeyState.text.toString())
 
             val uiState = viewModel.uiState.value
-            assertEquals(LlmProviderName.GEMINI, uiState.selectedProvider)
+            assertEquals(LlmProviderName.KIMI, uiState.selectedProvider)
 
             job.cancel()
         }
@@ -94,16 +96,35 @@ class SettingsViewModelTest {
         }
 
     @Test
+    fun updateKimiApiKey_updatesRepository() =
+        runTest {
+            val job = backgroundScope.launch { viewModel.uiState.collect {} }
+
+            Snapshot.withMutableSnapshot {
+                viewModel.kimiApiKeyState.edit { replace(0, length, "new_kimi_key") }
+            }
+            Snapshot.sendApplyNotifications()
+            yield()
+
+            viewModel.saveSettings()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals("new_kimi_key", fakeRepository.kimiApiKey.first())
+
+            job.cancel()
+        }
+
+    @Test
     fun setSelectedProvider_updatesRepository() =
         runTest {
             val job = backgroundScope.launch { viewModel.uiState.collect {} }
 
-            viewModel.setSelectedProvider(LlmProviderName.GEMINI)
+            viewModel.setSelectedProvider(LlmProviderName.KIMI)
 
             testScheduler.advanceUntilIdle()
 
             val uiState = viewModel.uiState.value
-            assertEquals(LlmProviderName.GEMINI, uiState.selectedProvider)
+            assertEquals(LlmProviderName.KIMI, uiState.selectedProvider)
 
             job.cancel()
         }

@@ -23,7 +23,6 @@ import androidx.appfunctions.metadata.AppFunctionName
 import androidx.appfunctions.metadata.AppFunctionPackageMetadata
 import com.example.appfunctions.agent.data.AgentInternalTools
 import com.example.appfunctions.agent.data.LlmModel
-import com.example.appfunctions.agent.data.LlmProviderName
 import com.example.appfunctions.agent.data.ServiceTier
 import com.example.appfunctions.agent.data.SettingsRepository
 import com.example.appfunctions.agent.data.db.entities.MessageAttachment
@@ -48,11 +47,13 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -108,6 +109,7 @@ class AgentOrchestratorTest {
                 state
             }
         }
+        coEvery { updateThreadUseCase(any(), any()) } returns true
     }
 
     @Test
@@ -137,6 +139,65 @@ class AgentOrchestratorTest {
                     processingStatus = MessageProcessingStatus.FAILED,
                 )
             }
+        }
+
+    @Test
+    fun `observeAndProcessMessages uses Kimi key for Kimi model`() =
+        runTest {
+            val threadId = "thread_kimi"
+            val message = createUserMessage(threadId, "Hello", messageId = "msg_kimi")
+            val thread = createThread(threadId, llmModel = LlmModel.KIMI_FOR_CODING)
+            val llmProvider = mockk<LlmProvider>()
+
+            setupDefaultMocks(
+                threadId = threadId,
+                message = message,
+                thread = thread,
+                apiKey = "kimi_key",
+                llmProvider = llmProvider,
+            )
+            coEvery { getAppFunctionsUseCase() } returns flowOf(emptyMap())
+            coEvery { llmProvider.generateResponse(any(), any(), any(), any(), any(), any()) } returns
+                LlmResponse.Success("kimi:[]", listOf(LlmResponsePart.Text("Hi")))
+
+            agentOrchestrator.observeAndProcessMessages(threadId)
+
+            coVerify {
+                llmProvider.generateResponse(
+                    previousInteractionId = null,
+                    input = LlmInput.UserMessage("Hello"),
+                    tools = any(),
+                    apiKey = "kimi_key",
+                    modelName = "kimi-for-coding",
+                    serviceTier = ServiceTier.STANDARD,
+                )
+            }
+        }
+
+    @Test
+    fun `observeAndProcessMessages rethrows provider cancellation`() =
+        runTest {
+            val threadId = "thread_cancelled"
+            val message = createUserMessage(threadId, "Hello", messageId = "msg_cancelled")
+            val thread = createThread(threadId)
+            val llmProvider = mockk<LlmProvider>()
+
+            setupDefaultMocks(threadId, message, thread, llmProvider = llmProvider)
+            coEvery { getAppFunctionsUseCase() } returns flowOf(emptyMap())
+            coEvery {
+                llmProvider.generateResponse(any(), any(), any(), any(), any(), any())
+            } throws CancellationException("cancelled")
+
+            var cancellationThrown = false
+            try {
+                agentOrchestrator.observeAndProcessMessages(threadId)
+            } catch (_: CancellationException) {
+                cancellationThrown = true
+            }
+
+            assertTrue(cancellationThrown)
+            assertEquals(AgentStatus.Idle, agentOrchestrator.status.value)
+            coVerify(exactly = 0) { updateMessageUseCase(any(), any()) }
         }
 
     @Test
@@ -196,7 +257,13 @@ class AgentOrchestratorTest {
 
             // Verify interactions
             coVerify {
-                updateThreadUseCase(threadId, UpdateThreadParams(interactionId = "interaction_123"))
+                updateThreadUseCase(
+                    threadId,
+                    UpdateThreadParams(
+                        interactionId = "interaction_123",
+                        expectedModel = LlmModel.GEMINI_3_FLASH_PREVIEW,
+                    ),
+                )
                 sendMessageUseCase(
                     threadId = threadId,
                     role = MessageRole.ASSISTANT,
@@ -407,9 +474,10 @@ class AgentOrchestratorTest {
             }
         coEvery { manageThreadsUseCase.getThread(threadId) } returns flowOf(thread)
         coEvery { settingsRepository.geminiApiKey } returns flowOf(apiKey)
+        coEvery { settingsRepository.kimiApiKey } returns flowOf(apiKey)
         coEvery { settingsRepository.disconnectedApps } returns flowOf(disconnectedApps)
         coEvery { settingsRepository.serviceTier } returns flowOf(ServiceTier.STANDARD)
-        coEvery { llmProviderFactory.getProvider(LlmProviderName.GEMINI) } returns llmProvider
+        coEvery { llmProviderFactory.getProvider(thread.llmModel.providerName) } returns llmProvider
     }
 
     @Test

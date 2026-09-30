@@ -28,6 +28,7 @@ import androidx.appfunctions.metadata.AppFunctionParameterMetadata
 import androidx.appfunctions.metadata.AppFunctionReferenceTypeMetadata
 import androidx.core.content.FileProvider
 import com.example.appfunctions.agent.data.AgentInternalTools
+import com.example.appfunctions.agent.data.LlmModel
 import com.example.appfunctions.agent.data.LlmProviderName
 import com.example.appfunctions.agent.data.SettingsRepository
 import com.example.appfunctions.agent.data.db.entities.MessageAttachment
@@ -66,6 +67,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -90,6 +92,7 @@ class AgentOrchestrator
         private val agentInternalTools: AgentInternalTools,
     ) {
         private val _status = MutableStateFlow<AgentStatus>(AgentStatus.Idle)
+        private val statusOwnerGeneration = AtomicLong(0)
 
         /** The current status of the agent. */
         val status: StateFlow<AgentStatus> = _status.asStateFlow()
@@ -117,18 +120,18 @@ class AgentOrchestrator
             message: MessageEntity,
             thread: ThreadEntity,
         ) {
+            val statusGeneration = statusOwnerGeneration.incrementAndGet()
             _status.value = AgentStatus.Thinking
 
             try {
                 val provider = thread.llmModel.providerName
                 val apiKey = getApiKey(provider)
-                if (apiKey == null) {
+                if (apiKey.isNullOrBlank()) {
                     completeMessageWithError(
                         message.messageId,
                         message.threadId,
                         "API key is missing for ${provider.name}",
                     )
-                    _status.value = AgentStatus.Idle
                     return
                 }
 
@@ -149,8 +152,8 @@ class AgentOrchestrator
                     tools = tools,
                     initialInput = queryText,
                 )
-
-                _status.value = AgentStatus.Idle
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("AgentOrchestrator", "Error processing message", e)
                 completeMessageWithError(
@@ -158,7 +161,10 @@ class AgentOrchestrator
                     message.threadId,
                     e.message ?: "Unknown error occurred",
                 )
-                _status.value = AgentStatus.Idle
+            } finally {
+                if (statusOwnerGeneration.get() == statusGeneration) {
+                    _status.value = AgentStatus.Idle
+                }
             }
         }
 
@@ -221,7 +227,13 @@ class AgentOrchestrator
 
                 when (
                     val handleResult =
-                        handleLlmResponse(response, message, tools, capturedAttachments)
+                        handleLlmResponse(
+                            response,
+                            message,
+                            tools,
+                            capturedAttachments,
+                            expectedModel = thread.llmModel,
+                        )
                 ) {
                     is HandleResult.Continue -> {
                         currentToolOutputs = handleResult.toolOutputs
@@ -238,6 +250,7 @@ class AgentOrchestrator
         private suspend fun getApiKey(provider: LlmProviderName): String? {
             return when (provider) {
                 LlmProviderName.GEMINI -> settingsRepository.geminiApiKey.first()
+                LlmProviderName.KIMI -> settingsRepository.kimiApiKey.first()
             }
         }
 
@@ -275,13 +288,26 @@ class AgentOrchestrator
             message: MessageEntity,
             tools: List<AppFunctionMetadata>,
             capturedAttachments: MutableList<MessageAttachment>,
+            expectedModel: LlmModel,
         ): HandleResult {
             return when (response) {
                 is LlmResponse.Success -> {
-                    updateThreadUseCase(
-                        message.threadId,
-                        UpdateThreadParams(interactionId = response.interactionId),
-                    )
+                    val continuationUpdated =
+                        updateThreadUseCase(
+                            message.threadId,
+                            UpdateThreadParams(
+                                interactionId = response.interactionId,
+                                expectedModel = expectedModel,
+                            ),
+                        )
+                    if (!continuationUpdated) {
+                        completeMessageWithError(
+                            message.messageId,
+                            message.threadId,
+                            "The model changed while the response was being generated. Please try again.",
+                        )
+                        return HandleResult.Stop
+                    }
                     updateMessageUseCase(
                         message.messageId,
                         UpdateMessageParams(status = MessageProcessingStatus.PROCESSED),
@@ -364,7 +390,6 @@ class AgentOrchestrator
                         message.threadId,
                         response.errorMessage,
                     )
-                    _status.value = AgentStatus.Idle
                     HandleResult.Stop
                 }
             }
@@ -426,6 +451,8 @@ class AgentOrchestrator
                                 inputs = rawConvertedInputs,
                             )
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         completeMessageWithError(
                             message.messageId,

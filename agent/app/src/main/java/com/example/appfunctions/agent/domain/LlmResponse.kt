@@ -20,7 +20,7 @@ sealed class LlmResponse {
     /**
      * Represents a successful response from the LLM.
      *
-     * @property interactionId The unique ID for this conversation turn, required for follow-ups.
+     * @property interactionId The provider continuation token required for follow-ups.
      * @property parts The ordered list of outputs (text, tool calls, etc.) from the model.
      */
     data class Success(

@@ -18,6 +18,7 @@ package com.example.appfunctions.agent.data
 /** Enum representing the supported LLM providers. */
 enum class LlmProviderName {
     GEMINI,
+    KIMI,
 }
 
 /** Enum representing the supported LLM models. */
@@ -30,6 +31,11 @@ enum class LlmModel private constructor(val providerName: LlmProviderName, val m
     GEMINI_3_1_PRO_PREVIEW(LlmProviderName.GEMINI, "gemini-3.1-pro-preview"),
     GEMINI_3_FLASH_PREVIEW(LlmProviderName.GEMINI, "gemini-3-flash-preview"),
     GEMINI_3_1_FLASH_LITE_PREVIEW(LlmProviderName.GEMINI, "gemini-3.1-flash-lite-preview"),
+
+    KIMI_K3(LlmProviderName.KIMI, "k3"),
+    KIMI_K3_256K(LlmProviderName.KIMI, "k3-256k"),
+    KIMI_FOR_CODING(LlmProviderName.KIMI, "kimi-for-coding"),
+    KIMI_FOR_CODING_HIGHSPEED(LlmProviderName.KIMI, "kimi-for-coding-highspeed"),
     ;
 
     companion object {

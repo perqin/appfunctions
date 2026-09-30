@@ -251,6 +251,7 @@ fun AgentDemoLoadedScreen(
                             .weight(1f)
                             .padding(horizontal = 8.dp),
                     currentThread = uiState.currentThread,
+                    enabled = uiState.status == AgentStatus.Idle,
                     onModelSelected = { onEvent(AgentUiEvent.OnModelSelected(it)) },
                     onMenuClick = {
                         if (isWideScreen) {
@@ -524,14 +525,15 @@ fun AgentDemoLoadedScreen(
 fun ModelDropdown(
     modifier: Modifier = Modifier,
     currentThread: ThreadEntity?,
+    enabled: Boolean = true,
     onModelSelected: (LlmModel) -> Unit,
     onMenuClick: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
         modifier = modifier,
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded },
+        expanded = expanded && enabled,
+        onExpandedChange = { if (enabled) expanded = !expanded },
     ) {
         Surface(
             modifier = Modifier.padding(bottom = 8.dp),
@@ -567,7 +569,7 @@ fun ModelDropdown(
                             .fillMaxHeight()
                             .menuAnchor(
                                 ExposedDropdownMenuAnchorType.PrimaryEditable,
-                                enabled = true,
+                                enabled = enabled,
                             ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -591,7 +593,7 @@ fun ModelDropdown(
         }
 
         LazyExposedDropdownMenu(
-            expanded = expanded,
+            expanded = expanded && enabled,
             onDismissRequest = { expanded = false },
             modifier = Modifier.exposedDropdownSize(),
             containerColor = MaterialTheme.colorScheme.surfaceBright,
@@ -614,6 +616,31 @@ fun ModelDropdown(
                     LlmModel.GEMINI_3_1_FLASH_LITE_PREVIEW,
                 )
             items(models) { model ->
+                DropdownMenuItem(
+                    text = { Text(model.modelName) },
+                    onClick = {
+                        onModelSelected(model)
+                        expanded = false
+                    },
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+                )
+            }
+            item {
+                Text(
+                    "--- Kimi ---",
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+            val kimiModels =
+                listOf(
+                    LlmModel.KIMI_K3,
+                    LlmModel.KIMI_K3_256K,
+                    LlmModel.KIMI_FOR_CODING,
+                    LlmModel.KIMI_FOR_CODING_HIGHSPEED,
+                )
+            items(kimiModels) { model ->
                 DropdownMenuItem(
                     text = { Text(model.modelName) },
                     onClick = {

@@ -56,11 +56,19 @@ class SettingsRepositoryTest {
         }
 
     @Test
+    fun setKimiApiKey_persistsValue() =
+        runTest {
+            repository.setKimiApiKey("kimi_key")
+
+            assertEquals("kimi_key", repository.kimiApiKey.first())
+        }
+
+    @Test
     fun setSelectedProvider_persistsValue() =
         runTest {
-            repository.setSelectedProvider(LlmProviderName.GEMINI)
+            repository.setSelectedProvider(LlmProviderName.KIMI)
             val value = repository.selectedProvider.first()
-            assertEquals(LlmProviderName.GEMINI, value)
+            assertEquals(LlmProviderName.KIMI, value)
         }
 
     @Test

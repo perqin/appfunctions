@@ -75,8 +75,9 @@ class RoomChatRepository
         override suspend fun updateLatestInteractionId(
             threadId: String,
             interactionId: String,
-        ) {
-            chatDao.updateLatestInteractionId(threadId, interactionId)
+            expectedModel: LlmModel,
+        ): Boolean {
+            return chatDao.updateLatestInteractionId(threadId, interactionId, expectedModel) > 0
         }
 
         override fun getThreadByInteractionId(interactionId: String): Flow<ThreadEntity?> {

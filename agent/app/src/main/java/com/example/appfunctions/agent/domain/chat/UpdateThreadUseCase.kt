@@ -16,6 +16,7 @@
 package com.example.appfunctions.agent.domain.chat
 
 import com.example.appfunctions.agent.data.ChatRepository
+import com.example.appfunctions.agent.data.LlmModel
 import javax.inject.Inject
 
 /** Use case to update thread state. */
@@ -31,12 +32,17 @@ class UpdateThreadUseCase
         suspend operator fun invoke(
             threadId: String,
             params: UpdateThreadParams,
-        ) {
-            params.interactionId?.let { interactionId ->
-                chatRepository.updateLatestInteractionId(threadId, interactionId)
-            }
+        ): Boolean {
+            return chatRepository.updateLatestInteractionId(
+                threadId,
+                params.interactionId,
+                params.expectedModel,
+            )
         }
     }
 
 /** Parameters for updating a thread. */
-data class UpdateThreadParams(val interactionId: String? = null)
+data class UpdateThreadParams(
+    val interactionId: String,
+    val expectedModel: LlmModel,
+)
