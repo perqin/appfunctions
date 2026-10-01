@@ -50,7 +50,11 @@ class DataStoreSettingsRepository
             }
 
         override val kimiApiKey: Flow<String?> =
-            dataStore.data.map { preferences -> preferences[PreferencesKeys.KIMI_API_KEY] }
+            if (BuildConfig.IS_RETAIL) {
+                flowOf(BuildConfig.KIMI_API_KEY)
+            } else {
+                dataStore.data.map { preferences -> preferences[PreferencesKeys.KIMI_API_KEY] }
+            }
 
         override val selectedProvider: Flow<LlmProviderName> =
             dataStore.data.map { preferences ->

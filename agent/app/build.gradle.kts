@@ -65,13 +65,20 @@ android {
                 gradle.startParameter.taskNames.any {
                     it.contains("Retail", ignoreCase = true)
                 }
-            val apiKey = project.findProperty("GEMINI_API_KEY") as? String ?: ""
-            if (containsRetail && apiKey.isEmpty()) {
+            val geminiApiKey = project.findProperty("GEMINI_API_KEY") as? String ?: ""
+            if (containsRetail && geminiApiKey.isEmpty()) {
                 throw GradleException(
                     "GEMINI_API_KEY project property is required for retail builds. Pass it using -PGEMINI_API_KEY=your_key",
                 )
             }
-            buildConfigField("String", "GEMINI_API_KEY", "\"$apiKey\"")
+            buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+            val kimiApiKey = project.findProperty("KIMI_API_KEY") as? String ?: ""
+            if (containsRetail && kimiApiKey.isEmpty()) {
+                throw GradleException(
+                    "KIMI_API_KEY project property is required for retail builds. Pass it using -PKIMI_API_KEY=your_key",
+                )
+            }
+            buildConfigField("String", "KIMI_API_KEY", "\"$kimiApiKey\"")
         }
     }
     buildFeatures {
